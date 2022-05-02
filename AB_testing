@@ -1,0 +1,59 @@
+from helper import *
+import statistics
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from scipy import stats as st
+
+print("Null Hypothesis: The mean latency of the two models (AB model - fixed and Our og model) is equal")
+print("Alternative Hypothesis: The mean latency of the two models (AB model - fixed and Our og model) is not equal")
+
+"""
+    Get data about AB testing
+"""
+dbhelper = mongoDBHelper("aieng", "AB_recommendations")
+ab_testing_model = dbhelper.collection.find({'modelID': {'$regex': '.*AB.*'}}).sort('ts', -1)
+ab_testing_model = list(ab_testing_model)
+
+AB_latency = []
+min_time = datetime.now()
+max_time = datetime.now() - relativedelta(years=3)
+for data in ab_testing_model:
+    min_time = min(min_time, data["ts"])
+    max_time = max(max_time, data["ts"])
+    AB_latency.append(data["latency"])
+
+AB_mean = statistics.mean(AB_latency)
+AB_std_dev = statistics.stdev(AB_latency)
+AB_sample = len(AB_latency)
+
+print("\nStatistics of AB latency:")
+print(f"AB latency mean: {round(AB_mean, 2)}, std_dev: {round(AB_std_dev, 2)}, sample: {AB_sample}")
+
+"""
+    Get data about Jenkins model
+"""
+og_testing_model = dbhelper.collection.find({'modelID': {'$regex': '.*enkin.*'}}).sort('ts', -1)
+og_testing_model = list(og_testing_model)
+
+og_latency = []
+for data in og_testing_model:
+    if data["ts"] >= min_time and data["ts"] <= max_time:
+        og_latency.append(data["latency"])
+
+og_mean = statistics.mean(og_latency)
+og_std_dev = statistics.stdev(og_latency)
+og_sample = len(og_latency)
+
+print(f"\nStatistics of og latency:")
+print(f"OG latency mean: {round(og_mean, 2)}, std_dev: {round(og_std_dev, 2)}, sample: {og_sample}")
+
+"""
+    Print t-test result
+"""
+
+print("\nt-test result:")
+print(f"p-value: {round(st.ttest_1samp(AB_latency, og_mean)[1], 4)}")
+if st.ttest_1samp(AB_latency, og_mean)[1] < 0.05:
+    print("Reject null hypothesis")
+else:
+    print("Fail to reject null hypothesis")

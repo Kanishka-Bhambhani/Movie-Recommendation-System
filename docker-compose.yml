@@ -1,0 +1,43 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  web_a:
+    build:
+      context: .
+    ports:
+      - "7004:7000"
+    # volumes:
+    #   - ./logvolume01:/var/log
+    restart: always
+
+  web_b:
+    build:
+      context: .
+    ports:
+      - "7005:7000"
+    restart: always
+
+  web_c:
+    build:
+      context: .
+    ports:
+      - "7006:7000"
+    restart: always
+  
+  web_d:
+    build:
+      context: .
+    ports:
+      - "7007:7000"
+    restart: always
+  
+  web_e:
+    build:
+      context: .
+    ports:
+      - "7008:7000"
+    restart: always
+
+    # volumes:
+    #   - ./logvolume02:/var/log
+# volumes:
+#   logvolume01: {}
